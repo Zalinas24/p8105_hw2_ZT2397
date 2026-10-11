@@ -1,0 +1,82 @@
+---
+title: "p8105_hw2_ZT2397"
+author: "Zaid"
+date: "2026-10-10"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 0
+```{r}
+library (tidyverse)
+library (readxl)
+```
+
+## Problem 1
+```{r}
+transit_sea =
+  read_csv(
+    "./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    na = c("NA", ".", ""),
+    col_types = cols(
+      Route1 = "c", Route2 = "c", Route3 = "c", Route4 = "c", Route5 = "c", Route6 = "c", Route7 = "c", Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) |>
+  janitor::clean_names() |>
+  select(
+    line, station_name, station_latitude, station_longitude, route1:route11, entry, vending, entrance_type, ada) |>
+  mutate(entry = case_match(entry, "YES" ~ TRUE, "NO" ~ FALSE))
+
+dim(transit_sea)
+```
+
+The dataset contains variables including station names, locations, routes served, entrance type, vending availability, and ADA compliance. Each row represent one entrance or exit. I cleaned the data by standardizign variable names with clean_names, selecting relevant variables, reading routes variables as character, and converting entry from YES?NO to a logical variable. The dataset has `r nrow(transit_sea)` rows and `r ncol(transit_sea)` columns. The data is not tidy because the routes are spread in 11 columns rather than being in a single one. 
+
+### Problem 1 questions
+```{r}
+# distinct stations
+transit_sea |>
+  select(station_name, line) |>
+  distinct()
+
+# ADA compliant stations
+transit_sea |>
+  filter(ada == TRUE) |>
+  select(station_name, line) |>
+  distinct()
+
+# proportion of entrances/exits without vending that allow entry
+transit_sea |>
+  filter(vending == "NO") |>
+  pull(entry) |>
+  mean()
+```
+
+There are 465 unique stations based on station name and subway line, of which 84 are ADA compliant. Among entrances and exits without vending machines, 0.377 allow entry.
+
+```{r}
+# stations that serve the A train
+transit_sea |>
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") |>
+  filter(route == "A") |>
+  select(station_name, line) |>
+  distinct()
+
+# ...of those, the ADA compliant ones
+transit_sea |>
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") |>
+  filter(route == "A", ada == TRUE) |>
+  select(station_name, line) |>
+  distinct()
+```
+After restructuring the data to separate route numbers and names, I found that 60 unique stations serve the A train, 17 of which are ADA compliant.
+
+## Problem 2
+
