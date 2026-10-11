@@ -79,4 +79,52 @@ transit_sea |>
 After restructuring the data to separate route numbers and names, I found that 60 unique stations serve the A train, 17 of which are ADA compliant.
 
 ## Problem 2
+```{r}
+trashwheel = "./data/202610 Trash Wheel Collection Data.xlsx"
 
+mr_trash_df =
+  read_excel(trashwheel, sheet = "Mr. Trash Wheel", range = "A2:N743") |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    sports_balls = as.integer(round(sports_balls)),
+    year = as.numeric(year),
+    wheel = "mr_trash_wheel")
+
+prof_trash_df =
+  read_excel(
+    trashwheel, sheet = "Professor Trash Wheel", range = "A2:M140",
+    na = c("", "NA", "dive")) |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.numeric(year),
+    wheel = "professor_trash_wheel")
+
+gwynnda_df =
+  read_excel(trashwheel, sheet = "Gwynnda the Good Wheel of the W", range = "A2:L395") |>
+  janitor::clean_names() |>
+  drop_na(dumpster) |>
+  mutate(
+    year = as.numeric(year),
+    wheel = "gwynnda")
+
+trash_df =
+  bind_rows(mr_trash_df, prof_trash_df, gwynnda_df) |>
+  relocate(wheel)
+
+prof_total_weight =
+  trash_df |>
+  filter(wheel == "professor_trash_wheel") |>
+  pull(weight_tons) |>
+  sum()
+
+gwynnda_june_2022_butts =
+  trash_df |>
+  filter(wheel == "gwynnda", month == "June", year == 2022) |>
+  pull(cigarette_butts) |>
+  sum()
+
+trashwheel
+```
+Putting the three trash wheels together gave me one dataset with `r nrow(trash_df)` observations (`r nrow(mr_trash_df)` dumpsters from Mr. Trash Wheel, `r nrow(prof_trash_df)` from Professor Trash Wheel, and `r nrow(gwynnda_df)` from Gwynnda) and `r ncol(trash_df)` variables. Each row is one dumpster that was emptied. To keep track of which wheel collected what, I added a variable for the trash wheel name. The dataset also records the dumpster number, month, year, and date, followed by the weight in tons and the volume in cubic yards. The rest of the variables count the items collected: plastic bottles, polystyrene, cigarette butts, glass bottles, plastic bags, wrappers, and sports balls. The last variable is the number of homes powered. Not every wheel tracks every item. Sports balls were only counted for Mr. Trash Wheel, and Gwynnda has no glass bottle counts, so those values are missing for the others. Across all of its dumpsters, Professor Trash Wheel collected `r prof_total_weight` tons of trash, and Gwynnda collected `r format(gwynnda_june_2022_butts, big.mark = ",")` cigarette butts in June 2022.
